@@ -70,7 +70,7 @@
     .member-item:last-child {
       border-bottom: none;
     }
-    /* 本日の当番の行をハイライト */
+    /* 本日の当番行をハイライト */
     .member-item.is-next {
       background-color: #e8f0fe;
       border-left: 4px solid #007bff;
@@ -89,27 +89,27 @@
       font-weight: bold;
     }
     
-    /* あと何人バッジのスタイル */
+    /* バッジデザイン */
     .turn-badge {
       font-size: 0.75rem;
-      padding: 3px 8px;
+      padding: 4px 10px;
       border-radius: 12px;
       font-weight: bold;
       display: inline-block;
       text-align: center;
     }
-    /* 今日の当番 */
+    /* 今日 */
     .turn-badge.today {
       background-color: #007bff;
       color: white;
     }
-    /* もうすぐ（あと1〜3人） */
+    /* 次回〜もうすぐ */
     .turn-badge.soon {
       background-color: #fff3cd;
       color: #856404;
       border: 1px solid #ffeeba;
     }
-    /* それ以降 */
+    /* 通常 */
     .turn-badge.normal {
       background-color: #e9ecef;
       color: #495057;
@@ -132,7 +132,7 @@
   </div>
 
   <script>
-    // ★ご自身の GAS Web アプリ URL をここに貼り付けてください
+    // ★ご自身の GAS Web アプリ URL に書き換えてください
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzisRKjPz58Xv3299CUFZKGcjlIQ2is1AC7s20lurJlXy50FpLt5To-qfxm6s7JH1Wn2A/exec";
 
     async function fetchDutyData() {
@@ -162,8 +162,6 @@
 
       data.list.forEach((item, index) => {
         const isNext = index === 0;
-        
-        // あと何人後かを表示するバッジのテキストとクラスを設定
         let badgeText = "";
         let badgeClass = "normal";
 
@@ -171,13 +169,13 @@
           badgeText = "本日";
           badgeClass = "today";
         } else if (index === 1) {
-          badgeText = "次（あと1人）";
+          badgeText = "次回 (1営業日後)";
           badgeClass = "soon";
         } else if (index <= 3) {
-          badgeText = `あと ${index} 人`;
+          badgeText = `もうすぐ (${index}営業日後)`;
           badgeClass = "soon";
         } else {
-          badgeText = `あと ${index} 人`;
+          badgeText = `${index}営業日後`;
           badgeClass = "normal";
         }
 
