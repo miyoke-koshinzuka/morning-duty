@@ -47,7 +47,33 @@
       display: inline-block;
       padding: 3px 12px;
       border-radius: 12px;
+      margin-bottom: 16px;
     }
+    /* 朝礼完了ボタン */
+    .complete-btn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: all 0.2s ease;
+      display: block;
+      margin: 0 auto;
+    }
+    .complete-btn:hover {
+      background-color: #218838;
+      transform: translateY(-1px);
+    }
+    .complete-btn:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     /* 一覧表示 */
     .list-title {
       font-size: 1rem;
@@ -70,7 +96,6 @@
     .member-item:last-child {
       border-bottom: none;
     }
-    /* 本日の当番行をハイライト */
     .member-item.is-next {
       background-color: #e8f0fe;
       border-left: 4px solid #007bff;
@@ -89,7 +114,7 @@
       font-weight: bold;
     }
     
-    /* バッジデザイン */
+    /* バッジ */
     .turn-badge {
       font-size: 0.75rem;
       padding: 4px 10px;
@@ -98,18 +123,15 @@
       display: inline-block;
       text-align: center;
     }
-    /* 今日 */
     .turn-badge.today {
       background-color: #007bff;
       color: white;
     }
-    /* 次回〜もうすぐ */
     .turn-badge.soon {
       background-color: #fff3cd;
       color: #856404;
       border: 1px solid #ffeeba;
     }
-    /* 通常 */
     .turn-badge.normal {
       background-color: #e9ecef;
       color: #495057;
@@ -133,12 +155,15 @@
 
   <script>
     // ★ご自身の GAS Web アプリ URL に書き換えてください
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzisRKjPz58Xv3299CUFZKGcjlIQ2is1AC7s20lurJlXy50FpLt5To-qfxm6s7JH1Wn2A/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycby0v1xNdrcveY6Tpx8atC6osmFVC1H2GOGe4mjFgHkWcA8lP1Q0GugmR-DBbOLEz8pk7A/exec";
+
+    let currentNextMember = null;
 
     async function fetchDutyData() {
       try {
         const response = await fetch(GAS_URL);
         const data = await response.json();
+        currentNextMember = data.next;
         renderUI(data);
       } catch (error) {
         document.getElementById('app').innerHTML = '<div class="loading">データの取得に失敗しました</div>';
@@ -154,6 +179,7 @@
           <div class="label">本日の朝礼当番</div>
           <div class="name">${data.next.name} さん</div>
           <div class="no">No. ${data.next.no}</div>
+          <button id="submitBtn" class="complete-btn" onclick="submitDuty()">朝礼完了（今日の日付を記録）</button>
         </div>
 
         <div class="list-title">次回以降の朝礼順一覧</div>
@@ -192,6 +218,38 @@
 
       html += `</div>`;
       app.innerHTML = html;
+    }
+
+    async function submitDuty() {
+      if (!currentNextMember) return;
+
+      const confirmMsg = `${currentNextMember.name} さんの朝礼完了を記録しますか？\n（スプレッドシートに今日の日付が入力されます）`;
+      if (!confirm(confirmMsg)) return;
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerText = "記録中...";
+
+      try {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ action: 'complete' })
+        });
+
+        alert(`${currentNextMember.name} さんの朝礼を記録しました！`);
+        // 最新データを取り直して表示を更新
+        fetchDutyData();
+
+      } catch (error) {
+        alert("送信中にエラーが発生しました");
+        console.error(error);
+        btn.disabled = false;
+        btn.innerText = "朝礼完了（今日の日付を記録）";
+      }
     }
 
     fetchDutyData();
