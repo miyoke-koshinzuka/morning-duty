@@ -49,29 +49,36 @@
       border-radius: 12px;
       margin-bottom: 16px;
     }
-    /* 朝礼完了ボタン */
-    .complete-btn {
+    /* ボタン共通 */
+    .btn {
       background-color: #28a745;
       color: white;
       border: none;
-      padding: 12px 24px;
-      font-size: 1rem;
       font-weight: bold;
-      border-radius: 24px;
+      border-radius: 20px;
       cursor: pointer;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
       transition: all 0.2s ease;
-      display: block;
-      margin: 0 auto;
     }
-    .complete-btn:hover {
+    .btn:hover {
       background-color: #218838;
       transform: translateY(-1px);
     }
-    .complete-btn:disabled {
+    .btn:disabled {
       background-color: #6c757d;
       cursor: not-allowed;
       transform: none;
+    }
+    .btn-main {
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      display: block;
+      margin: 0 auto;
+    }
+    .btn-small {
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      border-radius: 14px;
     }
 
     /* 一覧表示 */
@@ -90,7 +97,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 16px;
+      padding: 10px 14px;
       border-bottom: 1px solid #eee;
     }
     .member-item:last-child {
@@ -103,21 +110,26 @@
     .member-info {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
     .member-no {
       color: #888;
       font-size: 0.8rem;
-      width: 45px;
+      width: 40px;
     }
     .member-name {
       font-weight: bold;
     }
+    .member-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
     
     /* バッジ */
     .turn-badge {
-      font-size: 0.75rem;
-      padding: 4px 10px;
+      font-size: 0.7rem;
+      padding: 3px 8px;
       border-radius: 12px;
       font-weight: bold;
       display: inline-block;
@@ -155,15 +167,12 @@
 
   <script>
     // ★ご自身の GAS Web アプリ URL に書き換えてください
-    const GAS_URL = "https://script.google.com/macros/s/AKfycby0v1xNdrcveY6Tpx8atC6osmFVC1H2GOGe4mjFgHkWcA8lP1Q0GugmR-DBbOLEz8pk7A/exec";
-
-    let currentNextMember = null;
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzoFDSa3vZRPJLGxCTv5IO8TRf_cY8HOQdRkpjkXl4-P8d9s9Xl_wyojPP4CeJ95-AQfA/exec";
 
     async function fetchDutyData() {
       try {
         const response = await fetch(GAS_URL);
         const data = await response.json();
-        currentNextMember = data.next;
         renderUI(data);
       } catch (error) {
         document.getElementById('app').innerHTML = '<div class="loading">データの取得に失敗しました</div>';
@@ -176,10 +185,10 @@
       
       let html = `
         <div class="next-card">
-          <div class="label">本日の朝礼当番</div>
+          <div class="label">本日の予定当番</div>
           <div class="name">${data.next.name} さん</div>
           <div class="no">No. ${data.next.no}</div>
-          <button id="submitBtn" class="complete-btn" onclick="submitDuty()">朝礼完了（今日の日付を記録）</button>
+          <button class="btn btn-main" onclick="submitDuty(${data.next.no}, '${data.next.name}')">本日の朝礼完了</button>
         </div>
 
         <div class="list-title">次回以降の朝礼順一覧</div>
@@ -195,7 +204,7 @@
           badgeText = "本日";
           badgeClass = "today";
         } else if (index === 1) {
-          badgeText = "次回 (1営業日後)";
+          badgeText = "次回";
           badgeClass = "soon";
         } else if (index <= 3) {
           badgeText = `もうすぐ (${index}営業日後)`;
@@ -211,7 +220,10 @@
               <span class="member-no">No.${item.no}</span>
               <span class="member-name">${item.name}</span>
             </div>
-            <span class="turn-badge ${badgeClass}">${badgeText}</span>
+            <div class="member-actions">
+              <span class="turn-badge ${badgeClass}">${badgeText}</span>
+              <button class="btn btn-small" onclick="submitDuty(${item.no}, '${item.name}')">完了</button>
+            </div>
           </div>
         `;
       });
@@ -220,35 +232,35 @@
       app.innerHTML = html;
     }
 
-    async function submitDuty() {
-      if (!currentNextMember) return;
-
-      const confirmMsg = `${currentNextMember.name} さんの朝礼完了を記録しますか？\n（スプレッドシートに今日の日付が入力されます）`;
+    async function submitDuty(no, name) {
+      const confirmMsg = `${name} さんの朝礼完了を記録しますか？\n（スプレッドシートに今日の日付が入力されます）`;
       if (!confirm(confirmMsg)) return;
 
-      const btn = document.getElementById('submitBtn');
-      btn.disabled = true;
-      btn.innerText = "記録中...";
+      // 全てのボタンを一時的に無効化
+      const buttons = document.querySelectorAll('button');
+      buttons.forEach(b => b.disabled = true);
 
       try {
         const response = await fetch(GAS_URL, {
           method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ action: 'complete' })
+          body: JSON.stringify({ targetNo: no })
         });
 
-        alert(`${currentNextMember.name} さんの朝礼を記録しました！`);
+        const result = await response.json();
+
+        if (result.success) {
+          alert(result.message);
+        } else {
+          alert('エラー: ' + result.message);
+        }
+        
         // 最新データを取り直して表示を更新
         fetchDutyData();
 
       } catch (error) {
         alert("送信中にエラーが発生しました");
         console.error(error);
-        btn.disabled = false;
-        btn.innerText = "朝礼完了（今日の日付を記録）";
+        fetchDutyData();
       }
     }
 
